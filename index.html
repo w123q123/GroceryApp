@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <!-- 这一句必须加，为了让手机浏览器正常显示 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>买菜小助手</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- 顶部合计区 -->
+    <header class="top-bar">
+        <div class="total-info">
+            <span>合计：<strong id="total-price">￥0.00</strong></span>
+            <span id="total-count">共 0 件</span>
+        </div>
+    </header>
+
+    <!-- 核心算账表单 -->
+    <section class="add-form">
+        <input type="text" id="input-name" placeholder="输入菜名 (如:番茄)">
+        <input type="number" id="input-price" placeholder="单价(元)">
+        <div class="qty-box">
+            <input type="number" id="input-qty" placeholder="数量" value="1">
+            <select id="input-unit">
+                <option value="斤">斤</option>
+                <option value="个">个</option>
+                <option value="把">把</option>
+            </select>
+        </div>
+        <!-- 智能提示条 (默认隐藏) -->
+        <div id="smart-tip" class="smart-tip hidden">
+            <span id="tip-text">挑选要点...</span>
+            <button onclick="openDetail()">查看搭配</button>
+        </div>
+        <button id="btn-add" class="btn-primary">加入清单</button>
+    </section>
+
+    <!-- 底部工具栏 (两个轻入口 + AI) -->
+    <div class="bottom-tools">
+        <button onclick="openConvert()">⚖️ 单位换算</button>
+        <button onclick="openGuide()">🔍 挑菜指南</button>
+        <button class="btn-ai" onclick="askAI()">💬 AI帮挑</button>
+    </div>
+
+    <!-- 菜品列表 -->
+    <ul id="grocery-list" class="list-container">
+        <!-- 列表项由 JS 动态生成 -->
+    </ul>
+
+    <!-- 通用底部弹层 (包含详情、换算、AI回答) -->
+    <div id="modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal()">✕</span>
+            <div id="modal-body">
+                <!-- 内容由 JS 动态注入 -->
+            </div>
+        </div>
+    </div>
+
+    <script src="data.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
