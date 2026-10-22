@@ -11,12 +11,14 @@ const tipText = document.getElementById('tip-text');
 const listContainer = document.getElementById('grocery-list');
 const modal = document.getElementById('modal');
 const modalBody = document.getElementById('modal-body');
-const vegGrid = document.getElementById('veg-grid'); // 新增
+const vegGrid = document.getElementById('veg-grid'); 
 
 // ================= 2. 首页渲染快捷卡片 =================
 function renderHomeGrid() {
-    // 为了首页好看，我们只取字典里的前 8 个作为“热门”展示
+    // 自动取数据库里的前 8 个作为“热门”展示
     const hotItems = Object.keys(GUIDE_DATA).slice(0, 8); 
+    if(!vegGrid) return;
+    
     vegGrid.innerHTML = ''; 
 
     hotItems.forEach(key => {
@@ -46,6 +48,7 @@ inputName.addEventListener('input', (e) => {
 
     for (let key in GUIDE_DATA) {
         const item = GUIDE_DATA[key];
+        // 兼容别名匹配
         if (key.includes(val) || (item.aliases && item.aliases.some(a => a.includes(val)))) {
             currentMatch = { key, ...item };
             break;
@@ -54,6 +57,7 @@ inputName.addEventListener('input', (e) => {
 
     if (currentMatch) {
         tipText.innerText = `🔎 挑${currentMatch.key}：${currentMatch.pick[0]}`;
+        // 自动切换单位
         if(currentMatch.units && currentMatch.units.length > 0) {
              inputUnit.value = currentMatch.units[0];
         }
@@ -81,14 +85,16 @@ document.getElementById('btn-add').addEventListener('click', () => {
         alert("请填写完整的菜名、价格和数量！"); return;
     }
 
-    if ((unit === '个' || unit === '把' || unit === '根' || unit === '颗') && !Number.isInteger(qty)) {
-        alert("按个数/把/根/颗购买时，数量必须是整数！");
+    // 防呆设计：按“个/把/根/颗”买的时候，数量必须是整数
+    if ((unit === '个' || unit === '把' || unit === '根' || unit === '颗' || unit === '瓣' || unit === '盒') && !Number.isInteger(qty)) {
+        alert("按该单位购买时，数量必须是整数！");
         return;
     }
 
     groceryList.push({ name, price, qty, unit, id: Date.now() });
     renderList();
     
+    // 清空输入框
     inputName.value = ''; inputPrice.value = ''; inputQty.value = '1';
     smartTip.classList.add('hidden');
 });
@@ -145,8 +151,8 @@ window.openDetail = function() {
         <ul>${currentMatch.pick.map(p => `<li>${p}</li>`).join('')}</ul>
         
         <h3>⚖️ 单位参考与热量</h3>
-        ${currentMatch.refWeight ? `<p style="font-size:14px; color:#555;">${currentMatch.refWeight}</p>` : ''}
-        <p style="font-size:14px; color:#e67e22; font-weight:bold;">🔥 每100克约含 ${currentMatch.calories || '未知'} 大卡</p>
+        ${currentMatch.refWeight ? `<p style="font-size:14px; color:#555;">${currentMatch.refWeight}</p >` : ''}
+        <p style="font-size:14px; color:#e67e22; font-weight:bold;">🔥 每100克约含 ${currentMatch.calories || '未知'} 大卡</p >
         
         <h3>🍽️ 推荐搭配</h3>
         <div class="tag-group">${currentMatch.pair.map(p => `<span class="tag">${p}</span>`).join('')}</div>
@@ -197,6 +203,7 @@ window.calculateQty = function() {
         alert("请输入大于0的单价和预算金额！"); return;
     }
 
+    // 统一折算成克
     let pricePerGram = price;
     if (unit === '斤') pricePerGram = price / 500;
     else if (unit === '千克') pricePerGram = price / 1000;
@@ -213,6 +220,7 @@ window.calculateQty = function() {
         resultHtml += `<span style="font-size:20px; color:#e74c3c;">${Math.round(totalGrams)} 克</span><br>`;
     }
 
+    // 匹配数据库算个数和热量
     let matchedKey = null;
     for (let key in GUIDE_DATA) {
         if (name.includes(key) || (GUIDE_DATA[key].aliases && GUIDE_DATA[key].aliases.some(a => name.includes(a)))) {
@@ -272,12 +280,12 @@ window.quickViewDetail = function(key) {
     openDetail();
 }
 
-// ================= 9. AI 融合演示 =================
+// ================= 9. AI 融合演示 (本地智能匹配版) =================
 window.askAI = function() {
     openModal(`
         <h2>💬 AI帮挑 (模拟演示)</h2>
-        <p style="font-size:13px; color:#888; margin-bottom:10px;">真实比赛时，这里可接入大模型API</p >
-        <textarea id="ai-input" placeholder="例如：我想做番茄炒蛋，应该怎么挑番茄？" style="width:100%; height:80px; padding:10px; border:1px solid #ddd; border-radius:8px; box-sizing:border-box; font-size:15px;"></textarea>
+        <p style="font-size:13px; color:#888; margin-bottom:10px;">输入菜名，AI将为您智能提取知识库建议</p >
+        <textarea id="ai-input" placeholder="例如：西瓜、苹果、番茄怎么做？" style="width:100%; height:80px; padding:10px; border:1px solid #ddd; border-radius:8px; box-sizing:border-box; font-size:15px;"></textarea>
         <button onclick="sendAI()" class="btn-primary" style="margin-top:10px; width:100%;">发送提问</button>
         <div id="ai-answer" style="margin-top:20px; line-height:1.6; color:#333; background:#f4f6f4; padding:15px; border-radius:10px; display:none;"></div>
     `);
@@ -291,7 +299,39 @@ window.sendAI = function() {
     answerDiv.style.display = 'block';
     answerDiv.innerHTML = "🤖 AI 正在思考中...";
     
+    // 模拟网络延迟
     setTimeout(() => {
-        answerDiv.innerHTML = `【AI智能回答】<br>挑选番茄做番茄炒蛋时，建议选择<strong>颜色粉红、摸起来微软</strong>的，这样炒出来汁水多、容易起沙。尽量避免买摸起来硬邦邦的催熟番茄。另外，如果你在减脂，建议少放油，番茄本身热量极低，是非常健康的食材！`;
-    }, 1200);
+        // 尝试在数据库里寻找用户输入的关键词
+        let matchedKey = null;
+        for (let key in GUIDE_DATA) {
+            if (q.includes(key) || (GUIDE_DATA[key].aliases && GUIDE_DATA[key].aliases.some(a => q.includes(a)))) {
+                matchedKey = key;
+                break;
+            }
+        }
+
+        if (matchedKey) {
+            // 如果在数据库里找到了（比如找到了西瓜）
+            const item = GUIDE_DATA[matchedKey];
+            let answer = `为您找到了关于 <strong>${matchedKey}</strong> 的选购建议：<br><br>`;
+            
+            answer += `🔎 <strong>怎么挑：</strong><br>`;
+            item.pick.forEach(p => { answer += `• ${p}<br>`; });
+            
+            if (item.pair && item.pair.length > 0) {
+                answer += `<br>🍽️ <strong>推荐搭配：</strong>${item.pair.join('、')}。<br>`;
+            }
+            
+            answer += `<br>🔥 <strong>热量参考：</strong>每100克约 ${item.calories} 大卡。`;
+            
+            if (item.caution) {
+                answer += `<br><br>💡 <strong>注意事项：</strong>${item.caution}`;
+            }
+
+            answerDiv.innerHTML = `【AI智能回答】<br>${answer}`;
+        } else {
+            // 如果数据库里没有匹配到（比如随便乱打的词）
+            answerDiv.innerHTML = `【AI智能回答】<br>抱歉，我的本地知识库暂时没有“${q}”的详细资料。不过一般来说，挑选果蔬要选择外观完整、色泽自然、没有异味且手感合适的哦！`;
+        }
+    }, 800); // 延迟0.8秒，假装在思考
 }
