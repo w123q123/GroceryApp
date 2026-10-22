@@ -1,6 +1,6 @@
 // ================= 1. 状态与元素获取 =================
-let groceryList = []; // 清单数据
-let currentMatch = null; // 当前匹配到的菜品
+let groceryList = []; 
+let currentMatch = null; 
 
 const inputName = document.getElementById('input-name');
 const inputPrice = document.getElementById('input-price');
@@ -11,14 +11,39 @@ const tipText = document.getElementById('tip-text');
 const listContainer = document.getElementById('grocery-list');
 const modal = document.getElementById('modal');
 const modalBody = document.getElementById('modal-body');
+const vegGrid = document.getElementById('veg-grid'); // 新增
 
-// ================= 2. 智能提示条 =================
+// ================= 2. 首页渲染快捷卡片 =================
+function renderHomeGrid() {
+    // 为了首页好看，我们只取字典里的前 8 个作为“热门”展示
+    const hotItems = Object.keys(GUIDE_DATA).slice(0, 8); 
+    vegGrid.innerHTML = ''; 
+
+    hotItems.forEach(key => {
+        const item = GUIDE_DATA[key];
+        const card = document.createElement('div');
+        card.className = 'veg-card';
+        card.innerHTML = `
+            <span class="name">${key}</span>
+            <span class="cal">${item.calories || 0}卡</span>
+        `;
+        // 点击卡片直接填入表单
+        card.onclick = () => {
+            inputName.value = key;
+            inputName.dispatchEvent(new Event('input')); // 触发提示条
+            document.querySelector('.add-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        };
+        vegGrid.appendChild(card);
+    });
+}
+renderHomeGrid(); // 执行渲染
+
+// ================= 3. 智能提示条 =================
 inputName.addEventListener('input', (e) => {
     const val = e.target.value.trim();
     currentMatch = null;
     if (!val) { smartTip.classList.add('hidden'); return; }
 
-    // 遍历字典寻找匹配
     for (let key in GUIDE_DATA) {
         const item = GUIDE_DATA[key];
         if (key.includes(val) || (item.aliases && item.aliases.some(a => a.includes(val)))) {
@@ -29,7 +54,6 @@ inputName.addEventListener('input', (e) => {
 
     if (currentMatch) {
         tipText.innerText = `🔎 挑${currentMatch.key}：${currentMatch.pick[0]}`;
-        // 自动预选单位
         if(currentMatch.units && currentMatch.units.length > 0) {
              inputUnit.value = currentMatch.units[0];
         }
@@ -39,21 +63,32 @@ inputName.addEventListener('input', (e) => {
     }
 });
 
-// ================= 3. 加入清单与算账 =================
+// 回车键快捷提交
+document.querySelectorAll('.add-form input').forEach(input => {
+    input.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') document.getElementById('btn-add').click();
+    });
+});
+
+// ================= 4. 加入清单与算账 =================
 document.getElementById('btn-add').addEventListener('click', () => {
     const name = inputName.value.trim();
     const price = parseFloat(inputPrice.value);
-    const qty = parseFloat(inputQty.value);
+    let qty = parseFloat(inputQty.value);
     const unit = inputUnit.value;
 
     if (!name || isNaN(price) || isNaN(qty) || qty <= 0) {
         alert("请填写完整的菜名、价格和数量！"); return;
     }
 
+    if ((unit === '个' || unit === '把' || unit === '根' || unit === '颗') && !Number.isInteger(qty)) {
+        alert("按个数/把/根/颗购买时，数量必须是整数！");
+        return;
+    }
+
     groceryList.push({ name, price, qty, unit, id: Date.now() });
     renderList();
     
-    // 清空输入框
     inputName.value = ''; inputPrice.value = ''; inputQty.value = '1';
     smartTip.classList.add('hidden');
 });
@@ -92,14 +127,14 @@ window.deleteItem = function(id) {
     }
 }
 
-// ================= 4. 弹层控制 =================
+// ================= 5. 弹层控制 =================
 function openModal(htmlContent) {
     modalBody.innerHTML = htmlContent;
     modal.classList.remove('hidden');
 }
 window.closeModal = function() { modal.classList.add('hidden'); }
 
-// ================= 5. 查看详情卡 =================
+// ================= 6. 查看详情卡 =================
 window.openDetail = function() {
     if (!currentMatch) return;
     const html = `
@@ -110,18 +145,18 @@ window.openDetail = function() {
         <ul>${currentMatch.pick.map(p => `<li>${p}</li>`).join('')}</ul>
         
         <h3>⚖️ 单位参考与热量</h3>
-        <p style="font-size:14px; color:#555;">${currentMatch.refWeight || '按重量计算'}</p >
-        <p style="font-size:14px; color:#e67e22; font-weight:bold;">🔥 每100克约含 ${currentMatch.calories || '未知'} 大卡</p >
+        ${currentMatch.refWeight ? `<p style="font-size:14px; color:#555;">${currentMatch.refWeight}</p>` : ''}
+        <p style="font-size:14px; color:#e67e22; font-weight:bold;">🔥 每100克约含 ${currentMatch.calories || '未知'} 大卡</p>
         
         <h3>🍽️ 推荐搭配</h3>
         <div class="tag-group">${currentMatch.pair.map(p => `<span class="tag">${p}</span>`).join('')}</div>
         
-        ${currentMatch.caution ? `<p style="color:#888; font-size:13px; margin-top:10px; background:#f9f9f9; padding:10px; border-radius:8px;">💡 提示：${currentMatch.caution}</p >` : ''}
+        ${currentMatch.caution ? `<p style="color:#888; font-size:13px; margin-top:15px; background:#f9f9f9; padding:10px; border-radius:8px;">💡 提示：${currentMatch.caution}</p >` : ''}
     `;
     openModal(html);
 }
 
-// ================= 6. 算购买量 & 热量估计 =================
+// ================= 7. 算购买量 =================
 window.openConvert = function() {
     const html = `
         <h2>⚖️ 算算能买多少 & 热量预警</h2>
@@ -146,10 +181,7 @@ window.openConvert = function() {
 
         <button onclick="calculateQty()" class="btn-primary" style="width:100%; margin-bottom: 20px;">计算购买量</button>
         
-        <!-- 结果展示区 -->
-        <div id="calc-result" style="background:#eaf7ec; padding:15px; border-radius:10px; color:#2ea043; font-weight:bold; font-size:16px; display:none; line-height:1.6;">
-            <!-- 结果由 JS 动态注入 -->
-        </div>
+        <div id="calc-result" style="background:#eaf7ec; padding:15px; border-radius:10px; color:#2ea043; font-weight:bold; font-size:16px; display:none; line-height:1.6;"></div>
     `;
     openModal(html);
 }
@@ -165,13 +197,11 @@ window.calculateQty = function() {
         alert("请输入大于0的单价和预算金额！"); return;
     }
 
-    // 统一折算成“克”的单价
     let pricePerGram = price;
     if (unit === '斤') pricePerGram = price / 500;
     else if (unit === '千克') pricePerGram = price / 1000;
     else if (unit === '两') pricePerGram = price / 50;
 
-    // 计算能买多少克
     const totalGrams = budget / pricePerGram;
     let resultHtml = `💰 预算 ${budget} 元，大约可以买：<br>`;
     
@@ -183,7 +213,6 @@ window.calculateQty = function() {
         resultHtml += `<span style="font-size:20px; color:#e74c3c;">${Math.round(totalGrams)} 克</span><br>`;
     }
 
-    // 尝试匹配数据库，算个数和热量
     let matchedKey = null;
     for (let key in GUIDE_DATA) {
         if (name.includes(key) || (GUIDE_DATA[key].aliases && GUIDE_DATA[key].aliases.some(a => name.includes(a)))) {
@@ -193,8 +222,6 @@ window.calculateQty = function() {
 
     if (matchedKey) {
         const item = GUIDE_DATA[matchedKey];
-        
-        // 个数参考
         if (item.refWeight) {
             const matchGrams = item.refWeight.match(/(\d+)g/);
             if (matchGrams) {
@@ -203,12 +230,9 @@ window.calculateQty = function() {
                 resultHtml += `💡 小贴士：1个/把约 ${gramsPerItem}g，大约能买 <strong>${itemCount.toFixed(1)} 个/把</strong>。<br>`;
             }
         }
-
-        // 热量估计
         if (item.calories) {
             const totalCalories = (totalGrams / 100) * item.calories;
-            const runKm = (totalCalories / 65).toFixed(1); // 慢跑1公里约消耗65大卡
-            
+            const runKm = (totalCalories / 65).toFixed(1); 
             resultHtml += `<div style="margin-top:10px; padding-top:10px; border-top:1px dashed #b8e6c1;">
                                 🔥 <strong>热量预警：</strong>这些${matchedKey}大约含有 <span style="color:#e67e22; font-size:18px;">${Math.round(totalCalories)} 大卡</span>。<br>
                                 <span style="font-size:13px; color:#666;">(需慢跑约 ${runKm} 公里才能消耗掉 😅)</span>
@@ -222,7 +246,7 @@ window.calculateQty = function() {
     resDiv.style.display = 'block';
 }
 
-// ================= 7. 挑菜指南列表页 =================
+// ================= 8. 挑菜指南列表页 =================
 window.openGuide = function() {
     let listHtml = '<h2>🔍 挑菜指南库</h2><div style="display:flex; flex-direction:column; gap:10px; margin-top:15px;">';
     
@@ -243,13 +267,12 @@ window.openGuide = function() {
     openModal(listHtml);
 }
 
-// 辅助函数：从列表直接查看详情
 window.quickViewDetail = function(key) {
     currentMatch = { key, ...GUIDE_DATA[key] };
     openDetail();
 }
 
-// ================= 8. AI 融合演示 =================
+// ================= 9. AI 融合演示 =================
 window.askAI = function() {
     openModal(`
         <h2>💬 AI帮挑 (模拟演示)</h2>
@@ -268,8 +291,7 @@ window.sendAI = function() {
     answerDiv.style.display = 'block';
     answerDiv.innerHTML = "🤖 AI 正在思考中...";
     
-    // 模拟网络延迟
     setTimeout(() => {
-        answerDiv.innerHTML = `【AI智能回答】<br>挑选番茄做番茄炒蛋时，建议选择<strong>颜色粉红、摸起来微软</strong>的，这样炒出来汁水多、容易起沙。尽量避免买摸起来硬邦邦的催熟番茄。另外，如果你在减脂，建议少放油，番茄本身热量极低（约20大卡/100g），是非常健康的食材！`;
+        answerDiv.innerHTML = `【AI智能回答】<br>挑选番茄做番茄炒蛋时，建议选择<strong>颜色粉红、摸起来微软</strong>的，这样炒出来汁水多、容易起沙。尽量避免买摸起来硬邦邦的催熟番茄。另外，如果你在减脂，建议少放油，番茄本身热量极低，是非常健康的食材！`;
     }, 1200);
 }
