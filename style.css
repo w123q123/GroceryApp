@@ -10,7 +10,7 @@ body {
     padding: 0;
     background-color: var(--bg-color);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    padding-bottom: 80px;
+    padding-bottom: 80px; /* 给底部工具栏留空间 */
 }
 
 /* 顶部合计 */
@@ -24,69 +24,12 @@ body {
     font-size: 18px;
     border-radius: 0 0 16px 16px;
     box-shadow: 0 4px 10px rgba(46, 160, 67, 0.2);
-    position: sticky;
-    top: 0;
-    z-index: 20;
 }
-
-.home-title {
-    font-size: 14px;
-    font-weight: bold;
-    color: #555;
-    margin: 15px 15px 10px 15px;
-}
-
-/* ================= 新增：网格卡片样式 ================= */
-.grid-container {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr); /* 两列 */
-    gap: 12px;
-    padding: 0 15px;
-    margin-bottom: 20px;
-}
-
-.veg-card {
-    background: var(--card-bg);
-    border-radius: 12px;
-    padding: 15px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-    border: 1px solid #eee;
-    transition: transform 0.2s, box-shadow 0.2s;
-    cursor: pointer;
-    text-align: center;
-}
-
-.veg-card:active {
-    transform: scale(0.96);
-    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-}
-
-.veg-card h3 {
-    margin: 0 0 5px 0;
-    font-size: 18px;
-    color: #333;
-}
-
-.veg-card .category-tag {
-    display: inline-block;
-    background: var(--tip-bg);
-    color: var(--main-color);
-    font-size: 11px;
-    padding: 2px 8px;
-    border-radius: 10px;
-    margin-bottom: 8px;
-}
-
-.veg-card .cal-info {
-    font-size: 12px;
-    color: #888;
-}
-/* ===================================================== */
 
 /* 表单区 */
 .add-form {
     background: var(--card-bg);
-    margin: 0 15px 20px 15px;
+    margin: 15px;
     padding: 15px;
     border-radius: 16px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.05);
@@ -126,7 +69,6 @@ input:focus { border-color: var(--main-color); }
     color: var(--main-color);
     font-size: 13px;
     padding: 0;
-    font-weight: bold;
 }
 .hidden { display: none !important; }
 
