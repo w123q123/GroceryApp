@@ -1,7 +1,8 @@
-// ================= 1. 状态与元素获取 =================
-let groceryList = []; // 清单数据
-let currentMatch = null; // 当前匹配到的菜品
+// 1. 状态管理
+let groceryList = []; 
+let currentMatch = null; 
 
+// 2. DOM 元素获取
 const inputName = document.getElementById('input-name');
 const inputPrice = document.getElementById('input-price');
 const inputQty = document.getElementById('input-qty');
@@ -11,17 +12,45 @@ const tipText = document.getElementById('tip-text');
 const listContainer = document.getElementById('grocery-list');
 const modal = document.getElementById('modal');
 const modalBody = document.getElementById('modal-body');
+const vegGrid = document.getElementById('veg-grid'); // 新增网格容器
 
-// ================= 2. 智能提示条 =================
+// ================= 新增：渲染首页水果卡片 =================
+function renderGrid() {
+    vegGrid.innerHTML = ''; // 清空
+    for (let key in GUIDE_DATA) {
+        const item = GUIDE_DATA[key];
+        const card = document.createElement('div');
+        card.className = 'veg-card';
+        card.innerHTML = `
+            <h3>${key}</h3>
+            <div class="category-tag">${item.category}</div>
+            <div class="cal-info">🔥 ${item.calories || 0} 大卡/100g</div>
+        `;
+        // 点击卡片的事件：自动填入表单并触发提示
+        card.onclick = () => {
+            inputName.value = key;
+            // 触发 input 事件，让智能提示条弹出来
+            inputName.dispatchEvent(new Event('input'));
+            // 顺滑滚动到表单区域
+            document.querySelector('.add-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        };
+        vegGrid.appendChild(card);
+    }
+}
+
+// 页面加载后立刻渲染网格
+renderGrid();
+// ========================================================
+
+// 3. 智能提示条匹配
 inputName.addEventListener('input', (e) => {
     const val = e.target.value.trim();
     currentMatch = null;
     if (!val) { smartTip.classList.add('hidden'); return; }
 
-    // 遍历字典寻找匹配
     for (let key in GUIDE_DATA) {
         const item = GUIDE_DATA[key];
-        if (key.includes(val) || (item.aliases && item.aliases.some(a => a.includes(val)))) {
+        if (key.includes(val) || item.aliases.some(a => a.includes(val))) {
             currentMatch = { key, ...item };
             break;
         }
@@ -29,7 +58,6 @@ inputName.addEventListener('input', (e) => {
 
     if (currentMatch) {
         tipText.innerText = `🔎 挑${currentMatch.key}：${currentMatch.pick[0]}`;
-        // 自动预选单位
         if(currentMatch.units && currentMatch.units.length > 0) {
              inputUnit.value = currentMatch.units[0];
         }
@@ -39,7 +67,7 @@ inputName.addEventListener('input', (e) => {
     }
 });
 
-// ================= 3. 加入清单与算账 =================
+// 4. 加入清单算账
 document.getElementById('btn-add').addEventListener('click', () => {
     const name = inputName.value.trim();
     const price = parseFloat(inputPrice.value);
@@ -58,6 +86,7 @@ document.getElementById('btn-add').addEventListener('click', () => {
     smartTip.classList.add('hidden');
 });
 
+// 5. 渲染列表与计算总价
 function renderList() {
     listContainer.innerHTML = '';
     let totalMoney = 0;
@@ -69,13 +98,13 @@ function renderList() {
         const li = document.createElement('li');
         li.className = 'list-item';
         li.innerHTML = `
-            <div class="item-left">
-                <span class="item-name">${item.name}</span> 
-                <span class="item-desc">${item.price}元 × ${item.qty}${item.unit}</span>
+            <div>
+                <strong>${item.name}</strong> 
+                <span style="color:#888; font-size:12px;">${item.price}元 × ${item.qty}${item.unit}</span>
             </div>
-            <div class="item-right">
-                <span class="item-price">￥${subTotal.toFixed(2)}</span>
-                <button class="btn-delete" onclick="deleteItem(${item.id})">删除</button>
+            <div>
+                <span style="color:#e74c3c; font-weight:bold;">￥${subTotal.toFixed(2)}</span>
+                <button onclick="deleteItem(${item.id})" style="margin-left:10px; color:red; border:none; background:none;">删除</button>
             </div>
         `;
         listContainer.appendChild(li);
@@ -86,190 +115,94 @@ function renderList() {
 }
 
 window.deleteItem = function(id) {
-    if(confirm("确定要删除这个菜品吗？")) {
-        groceryList = groceryList.filter(item => item.id !== id);
-        renderList();
-    }
+    groceryList = groceryList.filter(item => item.id !== id);
+    renderList();
 }
 
-// ================= 4. 弹层控制 =================
+// 6. 弹层控制逻辑
 function openModal(htmlContent) {
     modalBody.innerHTML = htmlContent;
     modal.classList.remove('hidden');
 }
 window.closeModal = function() { modal.classList.add('hidden'); }
 
-// ================= 5. 查看详情卡 =================
+// 查看搭配详情
 window.openDetail = function() {
     if (!currentMatch) return;
     const html = `
         <h2>${currentMatch.key}</h2>
-        <p style="color:#666; font-size:14px;">${currentMatch.category || '食材'} · 常用单位：${currentMatch.units ? currentMatch.units.join('/') : '斤'}</p >
+        <p style="color:#666; font-size:14px;">${currentMatch.category} · 常用单位：${currentMatch.units.join('/')}</p >
         <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
         <h3>🔎 怎么挑</h3>
         <ul>${currentMatch.pick.map(p => `<li>${p}</li>`).join('')}</ul>
-        
-        <h3>⚖️ 单位参考与热量</h3>
-        <p style="font-size:14px; color:#555;">${currentMatch.refWeight || '按重量计算'}</p >
-        <p style="font-size:14px; color:#e67e22; font-weight:bold;">🔥 每100克约含 ${currentMatch.calories || '未知'} 大卡</p >
-        
+        <h3>🔥 热量与重量</h3>
+        <p>每100克约 <strong>${currentMatch.calories || 0}</strong> 大卡</p >
+        <p>${currentMatch.refWeight}</p >
         <h3>🍽️ 推荐搭配</h3>
-        <div class="tag-group">${currentMatch.pair.map(p => `<span class="tag">${p}</span>`).join('')}</div>
-        
-        ${currentMatch.caution ? `<p style="color:#888; font-size:13px; margin-top:10px; background:#f9f9f9; padding:10px; border-radius:8px;">💡 提示：${currentMatch.caution}</p >` : ''}
+        <div>${currentMatch.pair.map(p => `<span style="background:#eaf7ec; padding:4px 10px; border-radius:20px; margin-right:5px; font-size:14px; color:#2ea043;">${p}</span>`).join('')}</div>
+        <p style="color:#888; font-size:13px; margin-top:10px;">提示：${currentMatch.caution}</p >
     `;
     openModal(html);
 }
 
-// ================= 6. 算购买量 & 热量估计 =================
+// 单位换算
 window.openConvert = function() {
     const html = `
-        <h2>⚖️ 算算能买多少 & 热量预警</h2>
-        
-        <div style="margin-bottom: 15px;">
-            <input type="text" id="calc-name" placeholder="输入菜名 (如:番茄，算热量用)" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px; box-sizing:border-box; font-size:16px;">
-        </div>
-
-        <div style="display:flex; gap:10px; margin-bottom: 15px;">
-            <input type="number" id="calc-price" placeholder="单价" style="flex:1; padding:12px; border:1px solid #ddd; border-radius:8px; font-size:16px;">
-            <select id="calc-unit" style="width:120px; padding:12px; border:1px solid #ddd; border-radius:8px; font-size:16px; background:#fff;">
-                <option value="斤">元 / 斤</option>
-                <option value="千克">元 / 千克</option>
-                <option value="两">元 / 两</option>
-                <option value="克">元 / 克</option>
+        <h2>⚖️ 单位换算</h2>
+        <div style="display:flex; gap:10px; margin:20px 0;">
+            <input type="number" id="conv-val" value="1" style="flex:1; padding:10px; font-size:18px;">
+            <select id="conv-unit" style="padding:10px; font-size:18px;">
+                <option value="斤">斤</option>
+                <option value="公斤">公斤</option>
+                <option value="两">两</option>
+                <option value="克">克</option>
             </select>
         </div>
-
-        <div style="margin-bottom: 20px;">
-            <input type="number" id="calc-budget" placeholder="想花的钱 (元)" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px; box-sizing:border-box; font-size:16px;">
-        </div>
-
-        <button onclick="calculateQty()" class="btn-primary" style="width:100%; margin-bottom: 20px;">计算购买量</button>
-        
-        <!-- 结果展示区 -->
-        <div id="calc-result" style="background:#eaf7ec; padding:15px; border-radius:10px; color:#2ea043; font-weight:bold; font-size:16px; display:none; line-height:1.6;">
-            <!-- 结果由 JS 动态注入 -->
-        </div>
+        <div id="conv-result" style="background:#f9f9f9; padding:15px; border-radius:10px;"></div>
     `;
     openModal(html);
-}
-
-window.calculateQty = function() {
-    const name = document.getElementById('calc-name').value.trim();
-    const price = parseFloat(document.getElementById('calc-price').value);
-    const unit = document.getElementById('calc-unit').value;
-    const budget = parseFloat(document.getElementById('calc-budget').value);
-    const resDiv = document.getElementById('calc-result');
-
-    if (isNaN(price) || price <= 0 || isNaN(budget) || budget <= 0) {
-        alert("请输入大于0的单价和预算金额！"); return;
-    }
-
-    // 统一折算成“克”的单价
-    let pricePerGram = price;
-    if (unit === '斤') pricePerGram = price / 500;
-    else if (unit === '千克') pricePerGram = price / 1000;
-    else if (unit === '两') pricePerGram = price / 50;
-
-    // 计算能买多少克
-    const totalGrams = budget / pricePerGram;
-    let resultHtml = `💰 预算 ${budget} 元，大约可以买：<br>`;
     
-    if (totalGrams >= 1000) {
-        resultHtml += `<span style="font-size:20px; color:#e74c3c;">${(totalGrams / 1000).toFixed(2)} 千克</span> (约 ${(totalGrams / 500).toFixed(2)} 斤)<br>`;
-    } else if (totalGrams >= 50) {
-        resultHtml += `<span style="font-size:20px; color:#e74c3c;">${(totalGrams / 500).toFixed(2)} 斤</span> (约 ${Math.round(totalGrams)} 克)<br>`;
-    } else {
-        resultHtml += `<span style="font-size:20px; color:#e74c3c;">${Math.round(totalGrams)} 克</span><br>`;
-    }
+    const valInput = document.getElementById('conv-val');
+    const unitSelect = document.getElementById('conv-unit');
+    const resDiv = document.getElementById('conv-result');
 
-    // 尝试匹配数据库，算个数和热量
-    let matchedKey = null;
-    for (let key in GUIDE_DATA) {
-        if (name.includes(key) || (GUIDE_DATA[key].aliases && GUIDE_DATA[key].aliases.some(a => name.includes(a)))) {
-            matchedKey = key; break;
-        }
-    }
-
-    if (matchedKey) {
-        const item = GUIDE_DATA[matchedKey];
+    const updateConvert = () => {
+        const v = parseFloat(valInput.value) || 0;
+        const u = unitSelect.value;
+        const inGrams = v * UNIT_RATES[u];
         
-        // 个数参考
-        if (item.refWeight) {
-            const matchGrams = item.refWeight.match(/(\d+)g/);
-            if (matchGrams) {
-                const gramsPerItem = parseInt(matchGrams[1]);
-                const itemCount = totalGrams / gramsPerItem;
-                resultHtml += `💡 小贴士：1个/把约 ${gramsPerItem}g，大约能买 <strong>${itemCount.toFixed(1)} 个/把</strong>。<br>`;
-            }
-        }
-
-        // 热量估计
-        if (item.calories) {
-            const totalCalories = (totalGrams / 100) * item.calories;
-            const runKm = (totalCalories / 65).toFixed(1); // 慢跑1公里约消耗65大卡
-            
-            resultHtml += `<div style="margin-top:10px; padding-top:10px; border-top:1px dashed #b8e6c1;">
-                                🔥 <strong>热量预警：</strong>这些${matchedKey}大约含有 <span style="color:#e67e22; font-size:18px;">${Math.round(totalCalories)} 大卡</span>。<br>
-                                <span style="font-size:13px; color:#666;">(需慢跑约 ${runKm} 公里才能消耗掉 😅)</span>
-                            </div>`;
-        }
-    } else if (name) {
-        resultHtml += `<span style="font-size:12px; color:#888; margin-top:8px; display:block;">* 未匹配到该菜品的数据库，无法估算个数和卡路里。</span>`;
-    }
-
-    resDiv.innerHTML = resultHtml;
-    resDiv.style.display = 'block';
+        resDiv.innerHTML = Object.keys(UNIT_RATES).map(key => {
+            const converted = inGrams / UNIT_RATES[key];
+            return `<div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                        <span>${key}</span>
+                        <strong>${key === '克' ? Math.round(converted) : converted.toFixed(2)}</strong>
+                    </div>`;
+        }).join('');
+    };
+    valInput.addEventListener('input', updateConvert);
+    unitSelect.addEventListener('change', updateConvert);
+    updateConvert();
 }
 
-// ================= 7. 挑菜指南列表页 =================
-window.openGuide = function() {
-    let listHtml = '<h2>🔍 挑菜指南库</h2><div style="display:flex; flex-direction:column; gap:10px; margin-top:15px;">';
-    
-    for(let key in GUIDE_DATA) {
-        const item = GUIDE_DATA[key];
-        listHtml += `
-            <div style="background:#f9f9f9; padding:15px; border-radius:10px; border-left:4px solid var(--main-color);">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                    <strong style="font-size:16px;">${key}</strong>
-                    <span style="font-size:12px; color:#666; background:#e0e0e0; padding:2px 8px; border-radius:10px;">${item.category}</span>
-                </div>
-                <div style="font-size:14px; color:#555; margin-bottom:8px;">👉 ${item.pick[0]}</div>
-                <button onclick="quickViewDetail('${key}')" style="background:none; border:none; color:var(--main-color); font-size:13px; padding:0;">查看完整指南 ></button>
-            </div>
-        `;
-    }
-    listHtml += '</div>';
-    openModal(listHtml);
-}
-
-// 辅助函数：从列表直接查看详情
-window.quickViewDetail = function(key) {
-    currentMatch = { key, ...GUIDE_DATA[key] };
-    openDetail();
-}
-
-// ================= 8. AI 融合演示 =================
-window.askAI = function() {
+// 7. AI 帮挑 (保留原来的模拟演示，如需真实API请自行替换内部代码)
+window.askAI = async function() {
     openModal(`
-        <h2>💬 AI帮挑 (模拟演示)</h2>
-        <p style="font-size:13px; color:#888; margin-bottom:10px;">真实比赛时，这里可接入大模型API</p >
-        <textarea id="ai-input" placeholder="例如：我想做番茄炒蛋，应该怎么挑番茄？" style="width:100%; height:80px; padding:10px; border:1px solid #ddd; border-radius:8px; box-sizing:border-box; font-size:15px;"></textarea>
+        <h2>💬 AI帮挑</h2>
+        <textarea id="ai-input" placeholder="例如：我想做番茄炒蛋，应该怎么挑番茄？" style="width:100%; height:80px; padding:10px; border:1px solid #ddd; border-radius:8px; box-sizing:border-box;"></textarea>
         <button onclick="sendAI()" class="btn-primary" style="margin-top:10px; width:100%;">发送提问</button>
-        <div id="ai-answer" style="margin-top:20px; line-height:1.6; color:#333; background:#f4f6f4; padding:15px; border-radius:10px; display:none;"></div>
+        <div id="ai-answer" style="margin-top:20px; line-height:1.6; color:#333;"></div>
     `);
 }
 
-window.sendAI = function() {
+window.sendAI = async function() {
     const q = document.getElementById('ai-input').value;
     const answerDiv = document.getElementById('ai-answer');
-    if (!q) { alert("请输入你的问题！"); return; }
+    if (!q) return;
     
-    answerDiv.style.display = 'block';
-    answerDiv.innerHTML = "🤖 AI 正在思考中...";
+    answerDiv.innerHTML = "AI思考中...";
     
-    // 模拟网络延迟
+    // 演示占位
     setTimeout(() => {
-        answerDiv.innerHTML = `【AI智能回答】<br>挑选番茄做番茄炒蛋时，建议选择<strong>颜色粉红、摸起来微软</strong>的，这样炒出来汁水多、容易起沙。尽量避免买摸起来硬邦邦的催熟番茄。另外，如果你在减脂，建议少放油，番茄本身热量极低（约20大卡/100g），是非常健康的食材！`;
-    }, 1200);
+        answerDiv.innerText = `【AI回答演示】\n挑选${q}时，建议选择果形圆润、表面光滑且有弹性的。如果要做菜，最好选熟透的，这样汁水多、味道更浓郁哦。`;
+    }, 1000);
 }
