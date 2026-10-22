@@ -2,7 +2,6 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <!-- 这一句必须加，为了让手机浏览器正常显示，完美适配移动端 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>智能买菜小助手</title>
     <link rel="stylesheet" href="style.css">
@@ -42,6 +41,11 @@
         <button id="btn-add" class="btn-primary">加入清单</button>
     </section>
 
+    <!-- ======== 新增：首页快捷卡片区 ======== -->
+    <div class="home-title">🔥 热门果蔬快捷选择 (点击卡片自动填入)</div>
+    <div id="veg-grid" class="grid-container"></div>
+    <!-- ====================================== -->
+
     <!-- 菜品列表 -->
     <ul id="grocery-list" class="list-container">
         <!-- 列表项由 JS 动态生成 -->
@@ -54,17 +58,14 @@
         <button class="btn-ai" onclick="askAI()">💬 AI帮挑</button>
     </div>
 
-    <!-- 通用底部弹层 (包含详情、换算、AI回答) -->
+    <!-- 通用底部弹层 -->
     <div id="modal" class="modal hidden">
         <div class="modal-content">
             <span class="close-btn" onclick="closeModal()">✕</span>
-            <div id="modal-body">
-                <!-- 内容由 JS 动态注入 -->
-            </div>
+            <div id="modal-body"></div>
         </div>
     </div>
 
-    <!-- 引入数据和逻辑 -->
     <script src="data.js"></script>
     <script src="script.js"></script>
 </body>
