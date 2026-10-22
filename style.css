@@ -10,10 +10,9 @@ body {
     padding: 0;
     background-color: var(--bg-color);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    padding-bottom: 80px; /* 给底部工具栏留空间 */
+    padding-bottom: 80px;
 }
 
-/* 顶部合计 */
 .top-bar {
     background-color: var(--main-color);
     color: white;
@@ -24,9 +23,11 @@ body {
     font-size: 18px;
     border-radius: 0 0 16px 16px;
     box-shadow: 0 4px 10px rgba(46, 160, 67, 0.2);
+    position: sticky;
+    top: 0;
+    z-index: 20;
 }
 
-/* 表单区 */
 .add-form {
     background: var(--card-bg);
     margin: 15px;
@@ -47,9 +48,11 @@ input, select {
 }
 input:focus { border-color: var(--main-color); }
 
-.qty-box { display: flex; gap: 10px; }
-.qty-box input { flex: 1; }
-.qty-box select { width: 80px; }
+.price-qty-row { display: flex; gap: 10px; }
+.price-qty-row > input { flex: 1; }
+.qty-box { display: flex; gap: 10px; flex: 1; }
+.qty-box input { width: 50%; }
+.qty-box select { width: 50%; }
 
 /* 智能提示条 */
 .smart-tip {
@@ -72,7 +75,6 @@ input:focus { border-color: var(--main-color); }
 }
 .hidden { display: none !important; }
 
-/* 按钮 */
 .btn-primary {
     background-color: var(--main-color);
     color: white;
@@ -83,6 +85,74 @@ input:focus { border-color: var(--main-color); }
     font-weight: bold;
 }
 .btn-primary:active { opacity: 0.8; }
+
+/* ======== 新增：卡片网格样式 ======== */
+.home-title {
+    font-size: 14px;
+    color: #666;
+    margin: 20px 15px 10px 15px;
+    font-weight: bold;
+}
+
+.grid-container {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr); /* 一行4个小卡片 */
+    gap: 10px;
+    padding: 0 15px;
+}
+
+.veg-card {
+    background: white;
+    border: 1px solid #eee;
+    border-radius: 12px;
+    padding: 10px 5px;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.veg-card:active {
+    transform: scale(0.92);
+    background: var(--tip-bg);
+}
+
+.veg-card .name {
+    font-size: 15px;
+    font-weight: bold;
+    color: #333;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.veg-card .cal {
+    font-size: 11px;
+    color: #999;
+}
+/* ==================================== */
+
+/* 列表 */
+.list-container {
+    list-style: none;
+    padding: 0 15px;
+    margin: 20px 0 0 0;
+}
+.list-item {
+    background: var(--card-bg);
+    margin-bottom: 10px;
+    padding: 15px;
+    border-radius: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+}
+.item-left { display: flex; flex-direction: column; gap: 5px; }
+.item-name { font-weight: bold; font-size: 16px; color: #333; }
+.item-desc { font-size: 12px; color: #999; }
+.item-right { display: flex; align-items: center; gap: 10px; }
+.item-price { color: #e74c3c; font-weight: bold; font-size: 16px; }
+.btn-delete { color: #e74c3c; background: #fee; border: none; padding: 4px 8px; border-radius: 4px; font-size: 12px; }
 
 /* 底部工具栏 */
 .bottom-tools {
@@ -105,23 +175,6 @@ input:focus { border-color: var(--main-color); }
 }
 .bottom-tools .btn-ai { color: #6a1b9a; font-weight: bold; }
 
-/* 列表 */
-.list-container {
-    list-style: none;
-    padding: 0 15px;
-    margin: 0;
-}
-.list-item {
-    background: var(--card-bg);
-    margin-bottom: 10px;
-    padding: 15px;
-    border-radius: 14px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.03);
-}
-
 /* 弹层 */
 .modal {
     position: fixed;
@@ -140,6 +193,11 @@ input:focus { border-color: var(--main-color); }
     box-sizing: border-box;
     overflow-y: auto;
     position: relative;
+    animation: slideUp 0.3s ease-out;
+}
+@keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
 }
 .close-btn {
     position: absolute;
@@ -147,3 +205,7 @@ input:focus { border-color: var(--main-color); }
     font-size: 20px;
     color: #999;
 }
+
+/* 弹窗内的小标签 */
+.tag-group { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.tag { background: var(--tip-bg); color: var(--main-color); padding: 4px 12px; border-radius: 20px; font-size: 14px; }
